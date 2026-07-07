@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HydroPlay - Loading...</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #06060a;
+      color: #e0e0e8;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+    .boot {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      text-align: center;
+      padding: 1.5rem;
+      box-sizing: border-box;
+    }
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(99, 102, 241, 0.15);
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .boot p { color: #7777a0; font-size: 0.95rem; max-width: 480px; line-height: 1.5; }
+    .boot a { color: #818cf8; }
+  </style>
+</head>
+<body>
+  <div class="boot" id="boot">
+    <div class="spinner" id="boot-spinner"></div>
+    <p id="boot-msg">Loading game...</p>
+  </div>
+  <script>
+    (function () {
+      // The CDNs these games live on serve .html as text/plain, so a plain
+      // iframe/tab shows source code. Fetch the page ourselves and write it
+      // into this document with a <base> so relative assets still resolve.
+      var ALLOWED = [
+        'https://cdn.jsdelivr.net/gh/',
+        'https://rawcdn.githack.com/'
+      ];
+      var url = new URLSearchParams(location.search).get('url') || '';
+      var msg = document.getElementById('boot-msg');
+      var spinner = document.getElementById('boot-spinner');
+
+      function fail(text) {
+        spinner.style.display = 'none';
+        msg.textContent = text;
+      }
+
+      var allowed = ALLOWED.some(function (p) { return url.indexOf(p) === 0; });
+      if (!allowed) { fail('Invalid or missing game URL.'); return; }
+
+      fetch(url)
+        .then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.text();
+        })
+        .then(function (html) {
+          var baseHref = url.slice(0, url.lastIndexOf('/') + 1);
+          if (!/<base[\s>]/i.test(html)) {
+            var baseTag = '<base href="' + baseHref + '">';
+            if (/<head[^>]*>/i.test(html)) {
+              html = html.replace(/<head[^>]*>/i, function (m) { return m + baseTag; });
+            } else {
+              html = baseTag + html;
+            }
+          }
+          document.open();
+          document.write(html);
+          document.close();
+        })
+        .catch(function (err) {
+          fail('Could not load the game (' + err.message + '). Refresh to retry.');
+        });
+    })();
+  </script>
+</body>
+</html>
